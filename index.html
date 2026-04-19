@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SignFlow — eSignature Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Design tokens ─────────────────────────────────────────── */
+    :root {
+      --ink:      #0e0e0e;
+      --paper:    #f5f2eb;
+      --cream:    #ede9df;
+      --rule:     #d4cfc4;
+      --accent:   #1a4a3a;       /* deep forest green */
+      --accent2:  #c8602a;       /* burnt sienna */
+      --muted:    #7a7165;
+      --success:  #2d6a4f;
+      --warn:     #b5601f;
+      --danger:   #a33030;
+      --step-w:   340px;
+      --radius:   3px;
+      --mono:     'DM Mono', monospace;
+      --serif:    'DM Serif Display', serif;
+      --sans:     'DM Sans', sans-serif;
+    }
+
+```
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 16px; }
+
+body {
+  font-family: var(--sans);
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 100vh;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* ── Page chrome ───────────────────────────────────────────── */
+header {
+  background: var(--accent);
+  color: var(--paper);
+  padding: 18px 48px;
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  border-bottom: 3px solid var(--ink);
+}
+header h1 {
+  font-family: var(--serif);
+  font-size: 1.6rem;
+  letter-spacing: -0.02em;
+  font-style: italic;
+}
+header span {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  opacity: 0.6;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+main {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 56px 32px 80px;
+}
+
+/* ── Step rail ─────────────────────────────────────────────── */
+.rail {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  margin-bottom: 56px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.step-connector {
+  flex: 1;
+  height: 2px;
+  background: var(--rule);
+  margin-top: 18px;
+  min-width: 24px;
+  transition: background 0.4s;
+}
+.step-connector.active { background: var(--accent); }
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.step-num {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--rule);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--muted);
+  background: var(--paper);
+  transition: all 0.3s;
+}
+.step.active .step-num   { border-color: var(--accent); color: var(--accent); background: #e8f0ec; font-weight: 500; }
+.step.done .step-num     { border-color: var(--accent); background: var(--accent); color: var(--paper); }
+.step-label {
+  font-size: 0.68rem;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-align: center;
+  max-width: 72px;
+  line-height: 1.3;
+}
+.step.active .step-label { color: var(--accent); }
+.step.done  .step-label  { color: var(--accent); }
+
+/* ── Cards ─────────────────────────────────────────────────── */
+.card {
+  background: #fff;
+  border: 1.5px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 36px 40px;
+  margin-bottom: 24px;
+  transition: opacity 0.3s, transform 0.3s;
+  position: relative;
+}
+.card.hidden  { display: none; }
+.card.dimmed  { opacity: 0.4; pointer-events: none; }
+
+.card-title {
+  font-family: var(--serif);
+  font-size: 1.4rem;
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+.card-sub {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-bottom: 28px;
+  line-height: 1.5;
+}
+
+/* ── Form elements ─────────────────────────────────────────── */
+.field { margin-bottom: 20px; }
+label  {
+  display: block;
+  font-size: 0.75rem;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+input[type="text"],
+input[type="email"],
+textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--rule);
+  border-radius: var(--radius);
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  background: var(--paper);
+  color: var(--ink);
+  transition: border-color 0.2s;
+  outline: none;
+}
+input:focus, textarea:focus { border-color: var(--accent); }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+
+/* ── File drop zone ────────────────────────────────────────── */
+.drop-zone {
+  border: 2px dashed var(--rule);
+  border-radius: var(--radius);
+  padding: 40px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  position: relative;
+}
+.drop-zone:hover, .drop-zone.drag-over {
+  border-color: var(--accent);
+  background: #f0f5f2;
+}
+.drop-zone input[type="file"] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer;
+}
+.drop-icon {
+  font-size: 2rem;
+  margin-bottom: 12px;
+  display: block;
+}
+.drop-text {
+  font-size: 0.88rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.drop-text strong { color: var(--ink); }
+.file-chosen {
+  margin-top: 14px;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--accent);
+  display: none;
+}
+
+/* ── Buttons ───────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 24px;
+  border-radius: var(--radius);
+  border: 1.5px solid transparent;
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+.btn-primary {
+  background: var(--accent);
+  color: var(--paper);
+  border-color: var(--accent);
+}
+.btn-primary:hover { background: #122e24; border-color: #122e24; }
+.btn-primary:disabled { background: var(--rule); border-color: var(--rule); color: var(--muted); cursor: not-allowed; }
+
+.btn-outline {
+  background: transparent;
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.btn-outline:hover { background: #e8f0ec; }
+
+.btn-download {
+  background: var(--accent2);
+  color: white;
+  border-color: var(--accent2);
+  font-size: 0.95rem;
+  padding: 13px 28px;
+}
+.btn-download:hover { background: #9e4a1e; }
+
+.spinner {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Status tracker ────────────────────────────────────────── */
+.status-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 500;
+}
+.status-pending  { background: #fef3e2; color: #92570a; }
+.status-viewed   { background: #e2edff; color: #1a3a7a; }
+.status-signed,
+.status-completed{ background: #e4f5ec; color: var(--success); }
+.status-declined,
+.status-voided,
+.status-expired  { background: #fce8e8; color: var(--danger); }
+
+.dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: currentColor;
+}
+.dot.pulse { animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.75); }
+}
+
+.status-section {
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 24px; flex-wrap: wrap;
+}
+.status-label {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+/* ── Recipients table ──────────────────────────────────────── */
+.recipients-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  margin-bottom: 24px;
+}
+.recipients-table th {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1.5px solid var(--rule);
+}
+.recipients-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--cream);
+  vertical-align: middle;
+}
+
+/* ── Timeline / log ────────────────────────────────────────── */
+.log {
+  background: var(--cream);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  max-height: 180px;
+  overflow-y: auto;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.8;
+}
+.log-entry { display: flex; gap: 12px; }
+.log-time  { color: var(--rule); flex-shrink: 0; }
+.log-msg.ok   { color: var(--success); }
+.log-msg.err  { color: var(--danger); }
+.log-msg.info { color: var(--muted); }
+
+/* ── Success panel ─────────────────────────────────────────── */
+.success-panel {
+  background: linear-gradient(135deg, #1a4a3a 0%, #2d6a4f 100%);
+  color: white;
+  border-radius: var(--radius);
+  padding: 40px;
+  text-align: center;
+}
+.success-icon { font-size: 3rem; margin-bottom: 16px; }
+.success-panel h2 {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1.8rem;
+  margin-bottom: 10px;
+}
+.success-panel p {
+  opacity: 0.8; font-size: 0.9rem; margin-bottom: 28px; line-height: 1.6;
+}
+
+/* ── Error toast ───────────────────────────────────────────── */
+#toast {
+  position: fixed; bottom: 32px; right: 32px;
+  background: var(--danger); color: white;
+  padding: 14px 20px;
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  max-width: 360px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  transform: translateY(80px); opacity: 0;
+  transition: all 0.3s;
+  z-index: 999;
+}
+#toast.show { transform: translateY(0); opacity: 1; }
+
+/* ── Misc ──────────────────────────────────────────────────── */
+.meta-pill {
+  display: inline-block;
+  background: var(--cream);
+  border: 1px solid var(--rule);
+  border-radius: 20px;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  padding: 3px 12px;
+  margin-right: 6px;
+}
+.divider {
+  border: none; border-top: 1.5px solid var(--rule); margin: 28px 0;
+}
+.poll-note {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-family: var(--mono);
+  margin-top: 12px;
+}
+```
+
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>SignFlow</h1>
+  <span>Signeasy API Demo</span>
+</header>
+
+<main>
+
+  <!-- Step progress rail -->
+
+  <div class="rail" id="rail">
+    <div class="step active" id="s1"><div class="step-num">1</div><div class="step-label">Upload Doc</div></div>
+    <div class="step-connector" id="c1"></div>
+    <div class="step" id="s2"><div class="step-num">2</div><div class="step-label">Signer Info</div></div>
+    <div class="step-connector" id="c2"></div>
+    <div class="step" id="s3"><div class="step-num">3</div><div class="step-label">Send</div></div>
+    <div class="step-connector" id="c3"></div>
+    <div class="step" id="s4"><div class="step-num">4</div><div class="step-label">Track Status</div></div>
+    <div class="step-connector" id="c4"></div>
+    <div class="step" id="s5"><div class="step-num">5</div><div class="step-label">Download</div></div>
+  </div>
+
+  <!-- ── Card 1: Upload ───────────────────────────────────────── -->
+
+  <div class="card" id="card-upload">
+    <div class="card-title">Upload a Document</div>
+    <div class="card-sub">Choose a PDF, DOC, or DOCX (max 25 MB). It will be uploaded to your Signeasy account as an "original".</div>
+
+```
+<div class="drop-zone" id="dropZone">
+  <input type="file" id="fileInput" accept=".pdf,.doc,.docx" />
+  <span class="drop-icon">📄</span>
+  <div class="drop-text"><strong>Click to choose</strong> or drag &amp; drop a file here</div>
+  <div class="file-chosen" id="fileChosen"></div>
+</div>
+
+<br/>
+<button class="btn btn-primary" id="btnUpload" disabled>
+  Upload Document
+</button>
+```
+
+  </div>
+
+  <!-- ── Card 2: Signer ───────────────────────────────────────── -->
+
+  <div class="card dimmed" id="card-signer">
+    <div class="card-title">Add a Signer</div>
+    <div class="card-sub">Enter the recipient's details. Signeasy will email them a secure signing link.</div>
+
+```
+<div class="two-col">
+  <div class="field">
+    <label>Signer Name</label>
+    <input type="text" id="signerName" placeholder="e.g. Priya Sharma" />
+  </div>
+  <div class="field">
+    <label>Signer Email</label>
+    <input type="email" id="signerEmail" placeholder="priya@company.com" />
+  </div>
+</div>
+<div class="field">
+  <label>Message (optional)</label>
+  <input type="text" id="signerMsg" placeholder="Please review and sign this document." />
+</div>
+
+<button class="btn btn-primary" id="btnSend" disabled>
+  Send for Signature
+</button>
+```
+
+  </div>
+
+  <!-- ── Card 3: Status tracker ──────────────────────────────── -->
+
+  <div class="card hidden" id="card-status">
+    <div class="card-title">Signature Request Status</div>
+    <div class="card-sub">
+      The envelope has been sent. The table below updates automatically every 10 seconds.
+    </div>
+
+```
+<div class="status-section">
+  <span class="status-label">Envelope status</span>
+  <span class="status-badge status-pending" id="envelopeStatus">
+    <span class="dot pulse"></span> Pending
+  </span>
+  <span class="meta-pill" id="pendingIdPill"></span>
+</div>
+
+<table class="recipients-table">
+  <thead>
+    <tr>
+      <th>Recipient</th>
+      <th>Email</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody id="recipientsBody">
+    <tr><td colspan="3" style="color:var(--muted);font-style:italic;padding:16px 12px">Loading…</td></tr>
+  </tbody>
+</table>
+
+<div class="log" id="statusLog"></div>
+<div class="poll-note" id="pollNote">⏱ Auto-refreshing every 10 s…</div>
+
+<br/>
+<button class="btn btn-outline" id="btnRefresh">Refresh Now</button>
+```
+
+  </div>
+
+  <!-- ── Card 4: Download ─────────────────────────────────────── -->
+
+  <div class="card hidden" id="card-download">
+    <div class="success-panel">
+      <div class="success-icon">✅</div>
+      <h2>Document Signed!</h2>
+      <p>All parties have completed signing. You can now download the fully signed PDF along with the audit trail.</p>
+      <a class="btn btn-download" id="btnDownload" href="#" target="_blank">
+        ⬇ Download Signed PDF
+      </a>
+    </div>
+  </div>
+
+</main>
+
+<!-- Error toast -->
+
+<div id="toast"></div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────
+  const state = {
+    originalId:   null,
+    originalName: null,   // filename returned by upload, required in envelope sources[]
+    pendingId:    null,
+    signedId:     null,
+    pollTimer:    null,
+    pollCount:    0,
+  };
+
+  // ── DOM refs ───────────────────────────────────────────────────
+  const $ = id => document.getElementById(id);
+
+  const fileInput    = $("fileInput");
+  const fileChosen   = $("fileChosen");
+  const dropZone     = $("dropZone");
+  const btnUpload    = $("btnUpload");
+  const btnSend      = $("btnSend");
+  const btnRefresh   = $("btnRefresh");
+  const signerName   = $("signerName");
+  const signerEmail  = $("signerEmail");
+  const signerMsg    = $("signerMsg");
+  const statusBadge  = $("envelopeStatus");
+  const recipientsBody = $("recipientsBody");
+  const statusLog    = $("statusLog");
+  const pollNote     = $("pollNote");
+  const toast        = $("toast");
+
+  // ── Helpers ────────────────────────────────────────────────────
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add("show");
+    setTimeout(() => toast.classList.remove("show"), 4500);
+  }
+
+  function log(msg, type = "info") {
+    const now = new Date().toLocaleTimeString("en-GB", { hour12: false });
+    statusLog.innerHTML += `<div class="log-entry"><span class="log-time">${now}</span><span class="log-msg ${type}">${msg}</span></div>`;
+    statusLog.scrollTop = statusLog.scrollHeight;
+  }
+
+  function setStep(n) {
+    for (let i = 1; i <= 5; i++) {
+      const s = $(`s${i}`);
+      s.classList.toggle("done",   i < n);
+      s.classList.toggle("active", i === n);
+      s.classList.remove(i > n ? "done" : "");
+      if (i > n) { s.classList.remove("done"); s.classList.remove("active"); }
+    }
+    for (let i = 1; i <= 4; i++) {
+      $(`c${i}`).classList.toggle("active", i < n);
+    }
+  }
+
+  function statusClass(status) {
+    const map = {
+      pending: "status-pending", viewed: "status-viewed",
+      signed: "status-signed", completed: "status-completed",
+      declined: "status-declined", voided: "status-voided", expired: "status-expired",
+    };
+    return map[status] || "status-pending";
+  }
+
+  // Enable send button only when both fields are filled
+  function checkSendReady() {
+    btnSend.disabled = !(signerName.value.trim() && signerEmail.value.trim());
+  }
+  signerName.addEventListener("input", checkSendReady);
+  signerEmail.addEventListener("input", checkSendReady);
+
+  // ── File pick / drag-drop ──────────────────────────────────────
+  fileInput.addEventListener("change", () => {
+    const f = fileInput.files[0];
+    if (f) {
+      fileChosen.textContent = `✓  ${f.name}  (${(f.size / 1024).toFixed(1)} KB)`;
+      fileChosen.style.display = "block";
+      btnUpload.disabled = false;
+    }
+  });
+
+  dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("drag-over"); });
+  dropZone.addEventListener("dragleave",  () => dropZone.classList.remove("drag-over"));
+  dropZone.addEventListener("drop", e => {
+    e.preventDefault(); dropZone.classList.remove("drag-over");
+    const f = e.dataTransfer.files[0];
+    if (f) { fileInput.files = e.dataTransfer.files; fileInput.dispatchEvent(new Event("change")); }
+  });
+
+  // ── Step 1: Upload ────────────────────────────────────────────
+  btnUpload.addEventListener("click", async () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    btnUpload.disabled = true;
+    btnUpload.innerHTML = '<span class="spinner"></span> Uploading…';
+
+    const fd = new FormData();
+    fd.append("file", file);
+
+    try {
+      const res  = await fetch("/api/upload", { method: "POST", body: fd });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || data.detail || "Upload failed");
+
+      state.originalId   = data.original_id;
+      state.originalName = data.original_name;
+      btnUpload.innerHTML = "✓ Uploaded";
+
+      // Advance UI
+      $("card-signer").classList.remove("dimmed");
+      setStep(2);
+      log(`Document uploaded — original_id: ${state.originalId}`, "ok");
+
+    } catch (err) {
+      showToast(`Upload error: ${err.message}`);
+      btnUpload.disabled = false;
+      btnUpload.innerHTML = "Upload Document";
+    }
+  });
+
+  // ── Step 2: Send ──────────────────────────────────────────────
+  btnSend.addEventListener("click", async () => {
+    btnSend.disabled = true;
+    btnSend.innerHTML = '<span class="spinner"></span> Sending…';
+
+    const payload = {
+      original_id:   state.originalId,
+      original_name: state.originalName,   // required for sources[].name
+      signer_name:   signerName.value.trim(),
+      signer_email:  signerEmail.value.trim(),
+      message:       signerMsg.value.trim() || undefined,
+    };
+
+    try {
+      const res  = await fetch("/api/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || data.detail || "Send failed");
+
+      state.pendingId = data.pending_id;
+      btnSend.innerHTML = "✓ Sent";
+
+      // Reveal status card
+      $("card-status").classList.remove("hidden");
+      $("pendingIdPill").textContent = `envelope #${state.pendingId}`;
+      setStep(3);
+      log(`Envelope created — pending_id: ${state.pendingId}`, "ok");
+      log(`Signing link emailed to ${payload.signer_email}`, "info");
+
+      startPolling();
+
+    } catch (err) {
+      showToast(`Send error: ${err.message}`);
+      btnSend.disabled = false;
+      btnSend.innerHTML = "Send for Signature";
+    }
+  });
+
+  // ── Step 3: Polling ───────────────────────────────────────────
+  async function pollStatus() {
+    if (!state.pendingId) return;
+    state.pollCount++;
+
+    try {
+      const res  = await fetch(`/api/status/${state.pendingId}`);
+      const data = await res.json();
+
+      if (!res.ok) { log(`Poll error: ${data.error}`, "err"); return; }
+
+      const envStatus = data.status || "pending";
+
+      // Update badge
+      statusBadge.className = `status-badge ${statusClass(envStatus)}`;
+      const isPending = ["pending", "sent"].includes(envStatus);
+      statusBadge.innerHTML = `<span class="dot ${isPending ? "pulse" : ""}"></span> ${envStatus}`;
+
+      // Update recipients table
+      if (data.recipients && data.recipients.length) {
+        recipientsBody.innerHTML = data.recipients.map(r => `
+          <tr>
+            <td>${r.name || "—"}</td>
+            <td>${r.email || "—"}</td>
+            <td><span class="status-badge ${statusClass(r.status || "pending")}" style="font-size:0.7rem;padding:3px 10px">
+              <span class="dot"></span> ${r.status || "pending"}
+            </span></td>
+          </tr>`).join("");
+      }
+
+      // Terminal states
+      if (envStatus === "viewed")  { log("Signer has viewed the document.", "info"); setStep(4); }
+      if (["signed", "completed"].includes(envStatus)) {
+        stopPolling();
+        log("Document fully signed! Resolving signed ID…", "ok");
+        setStep(5);
+        await resolveAndShowDownload();
+      }
+      if (["declined", "voided", "expired"].includes(envStatus)) {
+        stopPolling();
+        log(`Envelope ${envStatus}. No further actions possible.`, "err");
+        pollNote.textContent = `Envelope ${envStatus}.`;
+      }
+
+    } catch (err) {
+      log(`Network error: ${err.message}`, "err");
+    }
+  }
+
+  function startPolling() {
+    pollStatus();
+    state.pollTimer = setInterval(pollStatus, 10_000);
+  }
+  function stopPolling() {
+    clearInterval(state.pollTimer);
+    pollNote.textContent = "Polling stopped — envelope is in a terminal state.";
+  }
+
+  btnRefresh.addEventListener("click", pollStatus);
+
+  // ── Step 4 → 5: Resolve signed id + show download ─────────────
+  async function resolveAndShowDownload() {
+    try {
+      const res  = await fetch(`/api/signed-id/${state.pendingId}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not resolve signed ID");
+
+      state.signedId = data.signed_id;
+      log(`Signed ID resolved: ${state.signedId}`, "ok");
+
+      $("btnDownload").href = `/api/download/${state.signedId}`;
+      $("card-download").classList.remove("hidden");
+      setStep(5);
+
+    } catch (err) {
+      log(`Download setup error: ${err.message}`, "err");
+      showToast(`Could not resolve signed document: ${err.message}`);
+    }
+  }
+
+  // ── Init ───────────────────────────────────────────────────────
+  setStep(1);
+</script>
+
+</body>
+</html>
